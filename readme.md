@@ -1,6 +1,6 @@
-# SentimentAI
+# sentiment.js
 
-SentimentAI, is an AI tool designed to analyze text data or transcribed raw dialogue from client-approved design reviews. It generates a comprehensive summary, including keyword extraction, sentiment analysis, and design categorization, allowing designers to pinpoint specific elements for refinement. Our target audience are UX/UI and product designers, particularly those that interface with various clients such as those at an agency or through freelance. The tool can also be hosted on a live web server so that users can access it from different devices.
+sentiment.js, is an AI tool designed to analyze text data or transcribed raw dialogue from client-approved design reviews. It generates a comprehensive summary, including keyword extraction, sentiment analysis, and design categorization, allowing designers to pinpoint specific elements for refinement. Our target audience are UX/UI and product designers, particularly those that interface with various clients such as those at an agency or through freelance. The tool can also be hosted on a live web server so that users can access it from different devices.
 
 # Quick Start
 
