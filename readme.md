@@ -7,7 +7,6 @@ A general-purpose AI-powered text analysis tool that performs sentiment analysis
 - **Sentiment Analysis**: Detects 27 different emotions using RoBERTa-based emotion classification
 - **Keyword Extraction**: Automatically extracts important keywords and phrases using KeyBERT
 - **Custom Term Analysis**: Define your own vocabulary terms and analyze their relevance in the text
-- **Preset Vocabularies**: Quick-start with Design, Business, or Technical term presets
 
 ## Quick Start
 
