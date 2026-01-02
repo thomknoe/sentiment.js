@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,15 +8,43 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <div class="container">
-    <h1>SentimentAI</h1>
+    <h1>sentiment.js</h1>
+
+    <!-- Vocabulary Management Card -->
+    <div class="card vocabulary-card">
+      <h3>Analysis Categories</h3>
+      <p class="description">Add custom terms to analyze in your text.</p>
+
+      <div class="preset-section">
+        <label class="section-label">Presets:</label>
+        <div class="preset-buttons">
+          <button class="preset-btn" data-preset="design">Design</button>
+          <button class="preset-btn" data-preset="business">Business</button>
+          <button class="preset-btn" data-preset="technical">Technical</button>
+        </div>
+      </div>
+
+      <div class="vocabulary-input-section">
+        <div class="vocabulary-input-wrapper">
+          <input type="text" id="vocabularyInput" placeholder="Add a term..." class="vocabulary-input">
+          <button id="addVocabularyBtn" class="add-vocab-btn">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+        <div id="vocabularyPills" class="vocabulary-pills">
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="note-input-wrapper">
-        <input id="noteInput" type="text" placeholder="Enter client or project name here...">
+        <input id="noteInput" type="text" placeholder="Enter subject name here...">
       </div>
       <div class="text-area-wrapper">
-        <textarea id="inputText" placeholder="Type or record your design feedback here..."></textarea>
+        <textarea id="inputText" placeholder="Type or record your dialogue here..."></textarea>
         <div class="button-container">
           <button id="analyzeButton">Process Feedback</button>
           <button id="recordButton">
@@ -33,4 +62,5 @@
   </div>
   <script src="script.js"></script>
 </body>
+
 </html>
