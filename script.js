@@ -1,88 +1,153 @@
 // Backend URL configuration
-// For local development: 'http://127.0.0.1:5000'
-// For production: Update to your deployed backend URL
+// Use local backend when on localhost, 127.0.0.1, or file:// (empty hostname)
 const BACKEND_URL =
+  !window.location.hostname ||
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1"
-    ? "http://127.0.0.1:5000"
+    ? "http://127.0.0.1:5001"
     : "https://your-backend-url.com"; // Update this to your deployed backend URL
 
 const recordButton = document.getElementById("recordButton");
 const inputText = document.getElementById("inputText");
 const analyzeButton = document.getElementById("analyzeButton");
-const sentimentResult = document.getElementById("sentimentResult");
-const keywordsResult = document.getElementById("keywordsResult");
-const designRelevanceResult = document.getElementById("designRelevanceResult");
-const fullTextDisplay = document.getElementById("fullTextDisplay");
-const tabsContainer = document.getElementById("tabs");
-const resultsContainer = document.getElementById("resultsContainer");
-let tabCounter = 0;
 const noteInput = document.getElementById("noteInput");
+const tabsContainer = document.getElementById("tabs");
+let storedAnalyses = [];
+let activeTabIndex = null;
 
-// Vocabulary management
-const vocabularyInput = document.getElementById("vocabularyInput");
-const addVocabularyBtn = document.getElementById("addVocabularyBtn");
-const vocabularyPills = document.getElementById("vocabularyPills");
-const presetButtons = document.querySelectorAll(".preset-btn");
+const TOOLTIP_ORIGINAL_TEXT =
+  "The feedback text you entered. Hover over keywords in the Keywords panel to highlight them here.";
+const TOOLTIP_KEYWORDS =
+  "The KeyBERT model is used for keyword extraction. KeyBERT is based on BERT embeddings and is designed to extract keywords or keyphrases from the text using pre-trained BERT-based models. KeyBERT works by first embedding the input text into a high-dimensional vector space and then using this representation to identify key terms that are semantically important. The top n keyphrases are returned.";
+const TOOLTIP_SENTIMENT =
+  "The model used for emotion classification is RoBERTa (Robustly optimized BERT approach), fine-tuned for emotion detection. Specifically, it uses the model SamLowe/roberta-base-go_emotions, which is trained on the GoEmotions dataset. The model predicts the probability of the presence of 27 different emotions (like joy, anger, sadness, etc.) in the text. Each emotion has a score indicating its likelihood.";
+const TOOLTIP_TERM_RELEVANCE =
+  "The SentenceTransformer model all-MiniLM-L6-v2 is used to obtain sentence-level embeddings for both the input text and your custom vocabulary terms. Cosine similarity is a metric that calculates the cosine of the angle between two vectors in a vector space. A higher cosine similarity score indicates that the text and the term are more similar.";
 
-// Store current vocabulary
-let currentVocabulary = [];
-
-// Preset vocabularies
-const presets = {
-  design: [
-    "Clarity",
-    "Simplicity",
-    "Elegance",
-    "Consistency",
-    "Balance",
-    "Harmony",
-    "Visual Appeal",
-    "Intuitiveness",
-    "User-Centric",
-    "Legibility",
-    "Accessibility",
-    "Functionality",
-    "Usability",
-    "Flexibility",
-    "Creativity",
-    "Innovation",
-    "Aesthetic Cohesion",
-  ],
-  business: [
-    "Efficiency",
-    "Scalability",
-    "Sustainability",
-    "Engagement",
-    "Innovation",
-    "Flexibility",
-    "Growth",
-    "Profitability",
-    "Market Share",
-    "Customer Satisfaction",
-    "Competitive Advantage",
-    "Strategic Planning",
-    "Risk Management",
-    "Value Creation",
-  ],
-  technical: [
-    "Performance",
-    "Reliability",
-    "Scalability",
-    "Security",
-    "Maintainability",
-    "Efficiency",
-    "Robustness",
-    "Modularity",
-    "Documentation",
-    "Testing",
-    "Code Quality",
-    "Architecture",
-    "Optimization",
-    "Compatibility",
-    "Integration",
-  ],
+const TOOLTIP_BY_ID = {
+  originalText: TOOLTIP_ORIGINAL_TEXT,
+  keywords: TOOLTIP_KEYWORDS,
+  sentiment: TOOLTIP_SENTIMENT,
+  termRelevance: TOOLTIP_TERM_RELEVANCE,
 };
+
+// Info modal: open on .info-icon click, close on X or overlay click
+const infoModal = document.getElementById("infoModal");
+const modalContent = document.querySelector(".modal-content");
+const modalClose = document.querySelector(".modal-close");
+
+function openInfoModal(text) {
+  if (!modalContent) return;
+  modalContent.textContent = text;
+  if (infoModal) {
+    infoModal.classList.add("modal-visible");
+    infoModal.setAttribute("aria-hidden", "false");
+  }
+}
+
+function closeInfoModal() {
+  if (infoModal) {
+    infoModal.classList.remove("modal-visible");
+    infoModal.setAttribute("aria-hidden", "true");
+  }
+}
+
+document.addEventListener("click", (e) => {
+  const icon = e.target.closest(".info-icon, .tooltip-icon");
+  if (icon) {
+    e.preventDefault();
+    const id = icon.getAttribute("data-tooltip-id");
+    const text = id ? TOOLTIP_BY_ID[id] : icon.getAttribute("title");
+    if (text) openInfoModal(text);
+  }
+});
+
+if (modalClose) modalClose.addEventListener("click", closeInfoModal);
+if (infoModal) {
+  infoModal.addEventListener("click", (e) => {
+    if (e.target === infoModal) closeInfoModal();
+  });
+}
+
+// Fixed design vocabulary — all feedback is measured against these terms
+const DESIGN_VOCABULARY = [
+  "CLARITY",
+  "SIMPLICITY",
+  "ELEGANCE",
+  "CONSISTENCY",
+  "BALANCE",
+  "HARMONY",
+  "VISUAL APPEAL",
+  "INTUITIVENESS",
+  "USER-CENTRIC",
+  "RESPONSIVENESS",
+  "LEGIBILITY",
+  "ACCESSIBILITY",
+  "FUNCTIONALITY",
+  "AESTHETIC COHESION",
+  "USABILITY",
+  "FLEXIBILITY",
+  "ADAPTABILITY",
+  "CREATIVITY",
+  "INNOVATION",
+  "ORIGINALITY",
+  "EFFICIENCY",
+  "SCALABILITY",
+  "SUSTAINABILITY",
+  "ENGAGEMENT",
+  "INTERACTION",
+  "VISUAL IMPACT",
+  "PRECISION",
+  "REFINEMENT",
+  "VERSATILITY",
+  "EMOTIONAL CONNECTION",
+  "TIMELESSNESS",
+  "MINIMALISM",
+  "MAXIMALISM",
+  "IMPACTFULNESS",
+  "APPROPRIATENESS",
+  "TRANSPARENCY",
+  "USER-FRIENDLINESS",
+  "COMFORT",
+  "CLARITY OF PURPOSE",
+  "ATTENTION TO DETAIL",
+  "EASE OF USE",
+  "SATISFACTION",
+  "ATTRACTIVENESS",
+  "DIFFERENTIATION",
+  "INSPIRATION",
+  "NARRATIVE",
+  "FUNCTIONALITY OVER FORM",
+  "BRAND ALIGNMENT",
+  "CONSISTENCY OF TONE",
+  "FLOW",
+  "STRUCTURE",
+  "CONTRAST",
+  "SPACING",
+  "TEXTURAL SENSITIVITY",
+  "PRECISION IN DETAIL",
+  "AUTHENTICITY",
+  "MOOD",
+  "APPEAL",
+  "CONTEXTUAL RELEVANCE",
+  "INNOVATION IN DESIGN",
+  "ENGAGING EXPERIENCE",
+  "VERSATILITY IN APPLICATION",
+  "COHERENCE",
+  "CRAFTSMANSHIP",
+  "EXPLORATION",
+  "PLAYFULNESS",
+  "INCLUSIVITY",
+  "RESPONSIVENESS TO CHANGE",
+  "PROVOCATION",
+  "SUSTAINABILITY IN MATERIALS",
+  "PROPORTIONALITY",
+  "COMPOSITIONAL BALANCE",
+  "TACTILITY",
+  "PERCEPTION",
+  "CRAFT",
+  "RESONANCE",
+];
 
 let recognition;
 let isRecording = false;
@@ -99,7 +164,7 @@ function isSecureContext() {
 if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
   if (!isSecureContext()) {
     console.warn(
-      "Speech Recognition requires HTTPS or localhost. Voice recording may not work."
+      "Speech Recognition requires HTTPS or localhost. Voice recording may not work.",
     );
     // Disable the record button visually
     recordButton.style.opacity = "0.5";
@@ -216,7 +281,7 @@ function updateRecordButton(recording) {
 recordButton.addEventListener("click", () => {
   if (!recognition) {
     alert(
-      "Speech Recognition is not supported in your browser.\n\nPlease use Chrome, Edge, or Safari."
+      "Speech Recognition is not supported in your browser.\n\nPlease use Chrome, Edge, or Safari.",
     );
     return;
   }
@@ -228,7 +293,7 @@ recordButton.addEventListener("click", () => {
         "To use voice recording:\n" +
         "1. Use a local development server (like VS Code's 'Go Live' extension)\n" +
         "2. Or serve the page over HTTPS\n" +
-        "3. Or type your feedback manually in the text area"
+        "3. Or type your feedback manually in the text area",
     );
     return;
   }
@@ -261,7 +326,7 @@ recordButton.addEventListener("click", () => {
             "Please:\n" +
             "1. Allow microphone access in your browser settings\n" +
             "2. Check your browser's permission settings for this site\n" +
-            "3. Or type your feedback manually"
+            "3. Or type your feedback manually",
         );
         stopEllipsisAnimation();
         inputText.value = "";
@@ -270,7 +335,7 @@ recordButton.addEventListener("click", () => {
         alert(
           "Error starting speech recognition: " +
             error.message +
-            "\n\nPlease try again or type your feedback manually."
+            "\n\nPlease try again or type your feedback manually.",
         );
         stopEllipsisAnimation();
         inputText.value = "";
@@ -279,141 +344,111 @@ recordButton.addEventListener("click", () => {
   }
 });
 
-function createNewTab(data, text, note) {
-  tabCounter++;
-
-  const tabButton = document.createElement("button");
-  tabButton.textContent = `${note}`;
-  tabButton.className = "tab-button";
-  tabButton.dataset.tabId = `tab-${tabCounter}`;
-
-  tabButton.addEventListener("click", () => {
-    switchToTab(tabButton.dataset.tabId);
-  });
-
-  tabsContainer.appendChild(tabButton);
-
-  const tabContent = document.createElement("div");
-  tabContent.id = `tab-${tabCounter}`;
-  tabContent.className = "tab-content";
-
+function updateResultsPanels(data, text) {
   const emotions = data.emotions || {};
   const topEmotions = Object.entries(emotions)
     .sort(([, aScore], [, bScore]) => bScore - aScore)
     .slice(0, 5);
 
   const keywords = data.keywords || [];
-  const highlightedText = highlightKeywords(text, keywords);
-
-  const termRelevance = data.term_relevance || [];
-  console.log("Processing term relevance:", termRelevance);
-  console.log("Term relevance length:", termRelevance.length);
-
-  const topTermRelevance = termRelevance
+  const termRelevance = (data.term_relevance || [])
     .sort((a, b) => b.relevance - a.relevance)
-    .slice(0, 4);
+    .slice(0, 6);
 
-  console.log("Top term relevance:", topTermRelevance);
-
-  const termHtml = topTermRelevance.length
-    ? topTermRelevance
-        .map(
-          ({ term, relevance }) => `
-          <div class="design-card">
-            <div class="design-card-content">
-              <div class="relevance-score">${(relevance * 100).toFixed(
-                0
-              )}%</div>
-              <div class="design-term">${term}</div>
-            </div>
-          </div>`
-        )
-        .join("")
-    : "<p>No relevant terms found</p>";
-
-  tabContent.innerHTML = `
-    <div class="full-text-container card">
-    <span class="tooltip-icon" title="The KeyBERT model is used for keyword extraction. KeyBERT is based on BERT embeddings and is designed to extract keywords or keyphrases from the text using pre-trained BERT-based models.KeyBERT works by first embedding the input text into a high-dimensional vector space and then using this representation to identify key terms that are semantically important. The top n keyphrases are returned.">ⓘ</span>
-      <h3>Original Text & Keywords:</h3>
-      <p class="original-text">${text}</p>      
-      <div class="keywords-container">
-        <div class="keyword-pills">
-          ${keywords
-            .map(
-              (keyword) =>
-                `<span class="pill" data-keyword="${keyword}">${keyword}</span>`
-            )
-            .join("")}
-        </div>
-      </div>
-    </div>
-    <div class="sentiment-container card">
-     <span class="tooltip-icon" title="The model used for emotion classification is RoBERTa (Robustly optimized BERT approach), fine-tuned for emotion detection. Specifically, it uses the model SamLowe/roberta-base-go_emotions, which is trained on the GoEmotions dataset. The model predicts the probability of the presence of 27 different emotions (like joy, anger, sadness, etc.) in the text. Each emotion has a score indicating its likelihood.">ⓘ</span>
-      <h3>Sentiment Analysis:</h3>
-      <div class="emotion-bars">
-        ${topEmotions
+  const termHtml =
+    termRelevance.length > 0
+      ? termRelevance
           .map(
-            ([emotion, score], index) =>
-              `<div class="emotion-row">
-                <span class="emotion-label">${capitalize(emotion)} ${Math.round(
-                score * 100
-              )}%</span>
-                <div class="bar-container">
-                  <div class="bar" style="width: ${Math.round(
-                    score * 100
-                  )}%;"></div>
-                </div>
-              </div>`
+            ({ term, relevance }) => `
+            <div class="design-card">
+              <div class="design-card-content">
+                <div class="relevance-score">${(relevance * 100).toFixed(0)}%</div>
+                <div class="design-term">${term}</div>
+              </div>
+            </div>`,
           )
-          .join("")}
-      </div>
-    </div>
-    <div class="design-relevance-container card">
-     <span class="tooltip-icon" title="The SentenceTransformer model all-MiniLM-L6-v2 is used to obtain sentence-level embeddings for both the input text and your custom vocabulary terms. Cosine similarity is a metric that calculates the cosine of the angle between two vectors in a vector space. A higher cosine similarity score indicates that the text and the term are more similar.">ⓘ</span>
-      <h3>Term Relevance Scores:</h3>
-      <div class="design-grid">${termHtml}</div>
-    </div>
-  `;
+          .join("")
+      : '<p class="panel-empty">No relevant terms found</p>';
 
-  document.querySelectorAll(".tab-content").forEach((content) => {
-    content.style.display = "none";
-  });
+  const panelText = document.getElementById("panelText");
+  const panelKeywords = document.getElementById("panelKeywords");
+  const panelSentiment = document.getElementById("panelSentiment");
+  const panelTerms = document.getElementById("panelTerms");
 
-  resultsContainer.appendChild(tabContent);
-  switchToTab(tabContent.id);
+  if (!panelText || !panelKeywords || !panelSentiment || !panelTerms) return;
 
-  addHoverEffectToPills(keywords);
+  function showContent(panel, placeholderEl, contentEl, html) {
+    if (placeholderEl) {
+      placeholderEl.hidden = true;
+      placeholderEl.style.display = "none";
+    }
+    if (contentEl) {
+      contentEl.innerHTML = html;
+      contentEl.hidden = false;
+      contentEl.style.display = "block";
+    }
+  }
+
+  showContent(
+    panelText,
+    panelText.querySelector(".panel-placeholder"),
+    panelText.querySelector(".panel-content"),
+    `<h3>Original Text</h3><p class="original-text panel-text-body">${escapeHtml(text)}</p>`,
+  );
+
+  showContent(
+    panelKeywords,
+    panelKeywords.querySelector(".panel-placeholder"),
+    panelKeywords.querySelector(".panel-content"),
+    `<span class="info-icon" data-tooltip-id="keywords">ⓘ</span><h3>Keywords</h3><div class="keyword-pills">${keywords.map((kw) => `<span class="pill" data-keyword="${escapeHtml(kw)}">${escapeHtml(kw)}</span>`).join("")}</div>`,
+  );
+
+  showContent(
+    panelSentiment,
+    panelSentiment.querySelector(".panel-placeholder"),
+    panelSentiment.querySelector(".panel-content"),
+    `<span class="info-icon" data-tooltip-id="sentiment">ⓘ</span><h3>Sentiment</h3><div class="emotion-bars">${topEmotions.map(([emotion, score]) => `<div class="emotion-row"><span class="emotion-label">${capitalize(emotion)} ${Math.round(score * 100)}%</span><div class="bar-container"><div class="bar" style="width: ${Math.round(score * 100)}%;"></div></div></div>`).join("")}</div>`,
+  );
+
+  showContent(
+    panelTerms,
+    panelTerms.querySelector(".panel-placeholder"),
+    panelTerms.querySelector(".panel-content"),
+    `<span class="info-icon" data-tooltip-id="termRelevance">ⓘ</span><h3>Term Relevance</h3><div class="design-grid">${termHtml}</div>`,
+  );
+
+  attachKeywordHover(panelText, panelKeywords);
 }
 
-function switchToTab(tabId) {
-  document.querySelectorAll(".tab-content").forEach((content) => {
-    content.style.display = content.id === tabId ? "block" : "none";
-  });
-
-  document.querySelectorAll(".tab-button").forEach((button) => {
-    button.classList.toggle("active-tab", button.dataset.tabId === tabId);
-  });
-}
-
-function addHoverEffectToPills(keywords) {
-  const pills = document.querySelectorAll(".pill");
-  const originalTextElement = document.querySelector(".original-text");
-
+function attachKeywordHover(panelTextEl, panelKeywordsEl) {
+  if (!panelTextEl || !panelKeywordsEl) return;
+  const originalTextEl = panelTextEl.querySelector(".original-text");
+  const pills = panelKeywordsEl.querySelectorAll(".pill[data-keyword]");
+  if (!originalTextEl || !pills.length) return;
+  const rawText = originalTextEl.textContent;
   pills.forEach((pill) => {
-    const keyword = pill.dataset.keyword.toLowerCase();
-
+    const keyword = pill.getAttribute("data-keyword");
+    if (!keyword) return;
     pill.addEventListener("mouseover", () => {
-      const regex = new RegExp(`\\b${keyword}\\b`, "gi");
-      originalTextElement.innerHTML = originalTextElement.textContent.replace(
+      const regex = new RegExp(
+        `\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+        "gi",
+      );
+      originalTextEl.innerHTML = rawText.replace(
         regex,
-        (match) => `<span class="highlight">${match}</span>`
+        (match) => `<span class="highlight">${match}</span>`,
       );
     });
-
     pill.addEventListener("mouseout", () => {
-      originalTextElement.innerHTML = originalTextElement.textContent;
+      originalTextEl.textContent = rawText;
     });
   });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 analyzeButton.addEventListener("click", async () => {
@@ -424,11 +459,7 @@ analyzeButton.addEventListener("click", async () => {
     return;
   }
 
-  // Get current vocabulary
-  const customVocabulary = currentVocabulary;
-
-  console.log("Sending vocabulary to backend:", customVocabulary);
-  console.log("Vocabulary length:", customVocabulary.length);
+  const customVocabulary = DESIGN_VOCABULARY;
 
   try {
     const response = await fetch(`${BACKEND_URL}/analyze`, {
@@ -460,11 +491,45 @@ analyzeButton.addEventListener("click", async () => {
     if (data.error) {
       alert(`Error: ${data.error}`);
     } else {
-      createNewTab(data, text, note);
+      const note = noteInput.value.trim() || "Untitled";
+      const index = storedAnalyses.length;
+      storedAnalyses.push({ note, text, data });
+
+      const tabBtn = document.createElement("button");
+      tabBtn.type = "button";
+      tabBtn.className = "tab-button";
+      tabBtn.textContent = note;
+      tabBtn.dataset.index = String(index);
+      tabBtn.addEventListener("click", () => {
+        const stored = storedAnalyses[Number(tabBtn.dataset.index)];
+        if (stored) {
+          updateResultsPanels(stored.data, stored.text);
+          document
+            .querySelectorAll(".tab-button")
+            .forEach((b) => b.classList.remove("active-tab"));
+          tabBtn.classList.add("active-tab");
+          activeTabIndex = Number(tabBtn.dataset.index);
+        }
+      });
+
+      if (tabsContainer) tabsContainer.appendChild(tabBtn);
+
+      updateResultsPanels(data, text);
+      document
+        .querySelectorAll(".tab-button")
+        .forEach((b) => b.classList.remove("active-tab"));
+      tabBtn.classList.add("active-tab");
+      activeTabIndex = index;
     }
   } catch (error) {
     console.error("Error during analysis:", error);
-    alert("An error occurred while analyzing the text.");
+    const msg = error.message || String(error);
+    alert(
+      "Could not reach the analysis server.\n\n" +
+        (msg.includes("fetch") || msg.includes("Failed")
+          ? "Make sure the backend is running (python3 backend.py) and try again."
+          : msg),
+    );
   }
 });
 
@@ -478,7 +543,7 @@ function highlightKeywords(text, keywords) {
     const regex = new RegExp(`\\b${keyword}\\b`, "gi");
     highlightedText = highlightedText.replace(
       regex,
-      `<span class="highlight">${keyword}</span>`
+      `<span class="highlight">${keyword}</span>`,
     );
   });
   return highlightedText;
@@ -496,92 +561,3 @@ function fadeInHighlights(keyword) {
     }
   });
 }
-
-// Vocabulary Management Functions
-function addVocabularyTerm(term) {
-  const trimmedTerm = term.trim();
-  if (!trimmedTerm) return false;
-
-  // Check if term already exists (case-insensitive)
-  const termLower = trimmedTerm.toLowerCase();
-  if (currentVocabulary.some((t) => t.toLowerCase() === termLower)) {
-    return false;
-  }
-
-  currentVocabulary.push(trimmedTerm);
-  renderVocabularyPills();
-  return true;
-}
-
-function removeVocabularyTerm(term) {
-  currentVocabulary = currentVocabulary.filter((t) => t !== term);
-  renderVocabularyPills();
-  return true;
-}
-
-function renderVocabularyPills() {
-  vocabularyPills.innerHTML = "";
-
-  currentVocabulary.forEach((term) => {
-    const pill = document.createElement("span");
-    pill.className = "vocab-pill";
-    pill.dataset.term = term;
-    pill.innerHTML = `${term} <i class="fas fa-times remove-term"></i>`;
-
-    const removeBtn = pill.querySelector(".remove-term");
-    removeBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      removeVocabularyTerm(term);
-    });
-
-    vocabularyPills.appendChild(pill);
-  });
-}
-
-function loadPreset(presetName) {
-  if (presets[presetName]) {
-    currentVocabulary = [...presets[presetName]];
-    console.log("Loaded preset:", presetName, "Vocabulary:", currentVocabulary);
-    renderVocabularyPills();
-
-    // Update active preset button
-    presetButtons.forEach((btn) => {
-      btn.classList.remove("active-preset");
-      if (btn.dataset.preset === presetName) {
-        btn.classList.add("active-preset");
-      }
-    });
-  } else {
-    console.warn("Preset not found:", presetName);
-  }
-}
-
-// Vocabulary input handlers
-addVocabularyBtn.addEventListener("click", () => {
-  const term = vocabularyInput.value.trim();
-  if (term) {
-    if (addVocabularyTerm(term)) {
-      vocabularyInput.value = "";
-    } else {
-      alert("This term already exists in your vocabulary.");
-    }
-  }
-});
-
-vocabularyInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    addVocabularyBtn.click();
-  }
-});
-
-// Preset button handlers
-presetButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const presetName = btn.dataset.preset;
-    loadPreset(presetName);
-  });
-});
-
-// Initialize with empty vocabulary
-renderVocabularyPills();

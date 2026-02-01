@@ -11,55 +11,75 @@
 
 <body>
   <div class="container">
-    <h1>sentiment.js</h1>
+    <header class="header">
+      <h1>sentiment.js</h1>
+      <p class="subtitle">Analyze feedback against design vocabulary — sentiment, keywords, and term relevance</p>
+    </header>
 
-    <!-- Vocabulary Management Card -->
-    <div class="card vocabulary-card">
-      <h3>Analysis Categories</h3>
-      <p class="description">Add custom terms to analyze in your text.</p>
-
-      <div class="preset-section">
-        <label class="section-label">Presets:</label>
-        <div class="preset-buttons">
-          <button class="preset-btn" data-preset="design">Design</button>
-          <button class="preset-btn" data-preset="business">Business</button>
-          <button class="preset-btn" data-preset="technical">Technical</button>
+    <main class="main">
+      <div class="left-column">
+        <section class="input-section card">
+          <div class="note-input-wrapper">
+            <input id="noteInput" type="text" placeholder="Subject name...">
+          </div>
+          <div class="text-area-wrapper">
+            <textarea id="inputText" placeholder="Type or record your dialogue here..."></textarea>
+            <div class="button-container">
+              <button id="analyzeButton" type="button">Process Feedback</button>
+              <button id="recordButton">
+                <i class="fas fa-microphone"></i>
+              </button>
+            </div>
+          </div>
+        </section>
+        <div id="tabsContainer" class="tabs-container">
+          <div id="tabs" class="tabs"></div>
         </div>
       </div>
 
-      <div class="vocabulary-input-section">
-        <div class="vocabulary-input-wrapper">
-          <input type="text" id="vocabularyInput" placeholder="Add a term..." class="vocabulary-input">
-          <button id="addVocabularyBtn" class="add-vocab-btn">
-            <i class="fas fa-plus"></i>
-          </button>
+      <div class="results-grid">
+        <div id="panelText" class="panel-card">
+          <div class="panel-placeholder" data-placeholder="panelText">
+            <h3>Original Text</h3>
+            <p>Process feedback to see results</p>
+          </div>
+          <div class="panel-content" hidden></div>
         </div>
-        <div id="vocabularyPills" class="vocabulary-pills">
+        <div id="panelKeywords" class="panel-card">
+          <div class="panel-placeholder" data-placeholder="panelKeywords">
+            <span class="info-icon" data-tooltip-id="keywords" title="Information">ⓘ</span>
+            <h3>Keywords</h3>
+            <p>Process feedback to see results</p>
+          </div>
+          <div class="panel-content" hidden></div>
+        </div>
+        <div id="panelSentiment" class="panel-card">
+          <div class="panel-placeholder" data-placeholder="panelSentiment">
+            <span class="info-icon" data-tooltip-id="sentiment" title="Information">ⓘ</span>
+            <h3>Sentiment</h3>
+            <p>Process feedback to see results</p>
+          </div>
+          <div class="panel-content" hidden></div>
+        </div>
+        <div id="panelTerms" class="panel-card">
+          <div class="panel-placeholder" data-placeholder="panelTerms">
+            <span class="info-icon" data-tooltip-id="termRelevance" title="Information">ⓘ</span>
+            <h3>Term Relevance</h3>
+            <p>Process feedback to see results</p>
+          </div>
+          <div class="panel-content" hidden></div>
         </div>
       </div>
-    </div>
+    </main>
+  </div>
 
-    <div class="card">
-      <div class="note-input-wrapper">
-        <input id="noteInput" type="text" placeholder="Enter subject name here...">
-      </div>
-      <div class="text-area-wrapper">
-        <textarea id="inputText" placeholder="Type or record your dialogue here..."></textarea>
-        <div class="button-container">
-          <button id="analyzeButton">Process Feedback</button>
-          <button id="recordButton">
-            <i class="fas fa-microphone"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div id="tabsContainer">
-      <div id="tabs"></div>
-      <div id="resultsContainer">
-      </div>
+  <div id="infoModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box">
+      <button type="button" class="modal-close" aria-label="Close">&times;</button>
+      <div class="modal-content"></div>
     </div>
   </div>
+
   <script src="script.js"></script>
 </body>
 

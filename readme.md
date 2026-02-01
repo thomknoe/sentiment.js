@@ -1,12 +1,12 @@
 # sentiment.js
 
-A general-purpose AI-powered text analysis tool that performs sentiment analysis, keyword extraction, and custom term relevance scoring on any text input. Analyze dialogue, reviews, feedback, or any textual content to extract insights about emotions, key topics, and relevance to custom vocabulary terms.
+An AI-powered text analysis tool that performs sentiment analysis, keyword extraction, and term relevance scoring against a fixed design vocabulary. Analyze dialogue, reviews, feedback, or any textual content to extract insights about emotions, key topics, and relevance to design terms.
 
 ## Features
 
 - **Sentiment Analysis**: Detects 27 different emotions using RoBERTa-based emotion classification
 - **Keyword Extraction**: Automatically extracts important keywords and phrases using KeyBERT
-- **Custom Term Analysis**: Define your own vocabulary terms and analyze their relevance in the text
+- **Term Relevance**: Analyze relevance of a fixed design vocabulary in the text
 
 ## Quick Start
 
@@ -49,10 +49,9 @@ A general-purpose AI-powered text analysis tool that performs sentiment analysis
    python backend.py
    ```
 
-   The backend will start on `http://127.0.0.1:5000`
+   The backend will start on `http://127.0.0.1:5001`
 
 5. Open the frontend:
-
    - **Option A**: Use VS Code's "Go Live" extension or any local server
    - **Option B**: Open `index.html` directly in a browser (voice recording won't work without HTTPS)
    - **Option C**: Use Python's built-in server:
